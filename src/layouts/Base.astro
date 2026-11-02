@@ -66,13 +66,23 @@ const ogImage = new URL(image, Astro.site);
 
     <script is:inline>
       (() => {
-        try {
-          const saved = localStorage.getItem("theme");
-          const dark = saved === "dark";
-          document.documentElement.classList.toggle("dark", dark);
-          document.documentElement.classList.toggle("light", !dark);
-        } catch {
-        }
+        const apply = (root) => {
+          let dark = false;
+          try {
+            dark = localStorage.getItem("theme") === "dark";
+          } catch {
+          }
+          root.classList.toggle("dark", dark);
+          root.classList.toggle("light", !dark);
+        };
+
+        apply(document.documentElement);
+
+        if (window.__themeBound) return;
+        window.__themeBound = true;
+        document.addEventListener("astro:before-swap", (event) => {
+          apply(event.newDocument.documentElement);
+        });
       })();
     </script>
     <ClientRouter />
