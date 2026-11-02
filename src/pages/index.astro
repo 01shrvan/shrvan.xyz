@@ -1,15 +1,19 @@
 ---
+import "@/styles/home.css";
+import type { ImageMetadata } from "astro";
 import { getCollection } from "astro:content";
 import Base from "@/layouts/Base.astro";
-import Shell from "@/components/Shell.astro";
-import RuledHeading from "@/components/RuledHeading.astro";
-import EntryRow from "@/components/EntryRow.astro";
-import SpecTable from "@/components/SpecTable.astro";
-import StackList from "@/components/StackList.astro";
+import Reel from "@/components/Reel.astro";
+import ThemeToggle from "@/components/ThemeToggle.astro";
 import NowPlaying from "@/components/NowPlaying.astro";
 import Quote from "@/components/Quote.astro";
 import Figure from "@/components/Figure.tsx";
-import { SITE, EXPERIENCE } from "@/lib/site";
+import { NAV, SITE, EXPERIENCE, SOCIALS, STACK } from "@/lib/site";
+import plates from "@/lib/plates.json";
+import parchiShot from "@/assets/works/parchi.png";
+import alignShot from "@/assets/works/align-network.png";
+import packdaddyShot from "@/assets/works/packdaddy.png";
+import bagdaddyShot from "@/assets/works/bagdaddy.png";
 
 const works = (await getCollection("works")).sort(
   (a, b) => a.data.order - b.data.order,
@@ -24,145 +28,247 @@ const monthYear = new Intl.DateTimeFormat("en-US", {
   year: "numeric",
 });
 const stamp = (d: Date) => monthYear.format(d).toLowerCase();
+
+const initialTime = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Asia/Kolkata",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+}).format(new Date());
+
 const hasDetail = (w: { body?: string; data: { verify: unknown[]; numbers: unknown[]; counter?: unknown } }) =>
   Boolean(w.body?.trim()) ||
   w.data.verify.length > 0 ||
   w.data.numbers.length > 0 ||
   Boolean(w.data.counter);
+
+const lead = (text: string) =>
+  (text.match(/^.*?[.!?](?=\s|$)/)?.[0] ?? text).replace(/\.$/, "");
+
+const shots: Record<string, ImageMetadata> = {
+  parchi: parchiShot,
+  "align-network": alignShot,
+  packdaddy: packdaddyShot,
+  bagdaddy: bagdaddyShot,
+};
+const art = plates as Record<string, string[]>;
+
+const frames = works
+  .filter((w) => w.data.featured)
+  .map((w) => {
+    const conformance = w.data.verify.find((v) => v.command.startsWith("h2spec"));
+    const score = w.data.numbers.find((n) => n.label === "h2spec")?.value;
+    const poster =
+      !shots[w.id] && conformance?.result && score
+        ? {
+            command: conformance.command,
+            score: score.replace(/\s/g, ""),
+            result: conformance.result,
+            counter: w.data.counter?.claim,
+          }
+        : undefined;
+    const counter = w.data.counter && !poster ? ` | ${lead(w.data.counter.claim)}` : "";
+
+    return {
+      id: w.id,
+      title: w.data.title,
+      href: hasDetail(w) ? `/works/${w.id}` : w.data.href,
+      external: !hasDetail(w),
+      line: `${lead(w.data.description)}${counter}`,
+      year: w.data.date.getFullYear(),
+      shot: shots[w.id],
+      art: art[w.id],
+      poster,
+    };
+  });
 ---
 
 <Base image="/og/home.jpg">
-  <Shell>
-    <section class="px-gutter pt-12">
-      <div class="flex items-start justify-between gap-6">
-        <div class="anim-lift min-w-0">
-          <h1 class="display text-display">
-            shrvan benke{" "}
-            <span class="font-normal text-ink-soft">({SITE.aka})</span>
-          </h1>
-          <p class="mt-1 text-step-0 text-ink-soft">
-            full-stack engineer from mumbai, mostly living on the frontend
+  <link
+    slot="head"
+    rel="preload"
+    href="/fonts/naori-latin.woff2"
+    as="font"
+    type="font/woff2"
+    crossorigin
+  />
+
+  <div class="home">
+    <header class="top">
+      <a href="/" class="top-mark" aria-label={`${SITE.aka}, home`}>{SITE.aka}</a>
+      <nav class="top-nav" aria-label="Primary">
+        {NAV.map(({ href, label }) => <a href={href}>{label}</a>)}
+        <ThemeToggle />
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="intro">
+        <div class="intro-head">
+          <h1 class="intro-name anim-lift"><span>shrvan</span> <span>benke</span></h1>
+          <div class="intro-figure">
+            <Figure client:visible discordId={SITE.discordId} />
+          </div>
+        </div>
+
+        <div class="intro-body anim-lift [animation-delay:120ms]">
+          <p class="intro-line">
+            i like building products end to end, the schema and the screen both.{" "}
+            <span>
+              most of whats below started as something i wanted to exist and
+              couldnt find, so i built it myself
+            </span>
           </p>
+
+          <dl class="status">
+            <dt>status</dt>
+            <dd class="status-live">
+              <span class="relative flex size-1.5 shrink-0 translate-y-[-0.15em]">
+                <span class="anim-mark absolute inline-flex size-full rounded-full bg-filament"></span>
+                <span class="relative inline-flex size-1.5 rounded-full bg-filament"></span>
+              </span>
+              open to freelance, contract and full-time
+            </dd>
+            <dt>based</dt>
+            <dd>
+              mumbai, india{" "}
+              <span class="status-clock">
+                <time data-clock>{initialTime}</time> ist
+              </span>
+            </dd>
+            <dt>focus</dt>
+            <dd>{SITE.focus}</dd>
+            <NowPlaying />
+          </dl>
         </div>
+      </section>
 
-        <div class="hidden sm:block">
-          <Figure client:visible discordId={SITE.discordId} />
+      <Reel frames={frames} total={works.length} />
+
+      <section class="about">
+        <p>
+          <span>currently freelancing; prev. ayritech, dreamskrin.</span> my day
+          to day is next.js and typescript, but im way more obsessive about how
+          a thing feels than how clever the backend is
+        </p>
+      </section>
+
+      <section class="split">
+        <h2 class="split-title">writings</h2>
+        <div>
+          <ol class="split-list">
+            {
+              writings.slice(0, 3).map((post) => (
+                <li>
+                  <a href={`/writings/${post.id}`} class="note">
+                    <h3 class="note-title">{post.data.title}</h3>
+                    <time class="note-date" datetime={post.data.date.toISOString()}>
+                      {stamp(post.data.date)}
+                    </time>
+                    <p class="note-tldr">{post.data.tldr}</p>
+                  </a>
+                </li>
+              ))
+            }
+          </ol>
+          <a href="/writings" class="link-ink note-all">all {writings.length} writings</a>
         </div>
-      </div>
+      </section>
 
-      <div class="anim-lift mt-7 max-w-measure space-y-3.5 [animation-delay:120ms]">
-        <p>
-          currently freelancing; prev. ayritech, dreamskrin. my day to day is
-          next.js and typescript, but im way more obsessive about how a thing
-          feels than how clever the backend is
-        </p>
-        <p>
-          i like building products end to end, the schema and the screen both.
-          most of whats below started as something i wanted to exist and
-          couldnt find, so i built it myself
-        </p>
-        <p>
-          reach me at{" "}
-          <a href={`mailto:${SITE.email}`} class="link">{SITE.email}</a>
-        </p>
-      </div>
-    </section>
+      <section class="split">
+        <h2 class="split-title">experience</h2>
+        <ol class="split-list">
+          {
+            EXPERIENCE.map((job) => (
+              <li class="job">
+                <div>
+                  <p class="job-co">{job.company}</p>
+                  <p class="job-place">{job.place}</p>
+                </div>
+                <div class="job-detail">
+                  <p class="job-role">{job.role}</p>
+                  <p class="job-note">{job.note}</p>
+                </div>
+                <p class="job-when">{job.period} {job.stamp}</p>
+              </li>
+            ))
+          }
+        </ol>
+      </section>
 
-    <section class="px-gutter pt-12">
-      <RuledHeading>currently</RuledHeading>
-      <div class="mt-4">
-        <SpecTable
-          rows={[
-            {
-              label: "status",
-              value: "open to freelance, contract and full-time",
-              live: true,
-            },
-            {
-              label: "based",
-              value: "mumbai, india (utc+5:30)",
-              clock: true,
-            },
-            { label: "focus", value: SITE.focus },
-          ]}
-        >
-          <NowPlaying />
-        </SpecTable>
-      </div>
-    </section>
-
-    <section class="px-gutter pt-12">
-      <RuledHeading count={EXPERIENCE.length}>experience</RuledHeading>
-      <div class="mt-2">
-        {
-          EXPERIENCE.map((job, i) => (
-            <div
-              style={`animation-delay:${90 + i * 45}ms`}
-              class="anim-lift py-3"
-            >
-              <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-                <span class="data shrink-0 text-ink-soft sm:w-rail">{job.stamp}</span>
-                <span class="font-medium">{job.role}</span>
-                <span class="leader hidden sm:block" />
-                <span class="data shrink-0 text-ink-soft">
-                  {job.period} &middot; {job.company} &middot; {job.place}
+      <section class="split">
+        <h2 class="split-title">stack</h2>
+        <ul class="split-list">
+          {
+            STACK.map(({ layer, tools }) => (
+              <li class="tools">
+                <span class="tools-layer">{layer.toLowerCase()}</span>
+                <span>
+                  {tools.map((tool, i) => (
+                    <Fragment>
+                      {i > 0 && ", "}
+                      <a href={tool.url} target="_blank" rel="noopener noreferrer">{tool.name}</a>
+                    </Fragment>
+                  ))}
                 </span>
-              </div>
-              <p class="mt-1 text-step--1 leading-relaxed text-ink-soft sm:ml-rail-offset">
-                {job.note}
-              </p>
-            </div>
-          ))
-        }
-      </div>
-    </section>
+              </li>
+            ))
+          }
+        </ul>
+      </section>
+    </main>
 
-    <section class="px-gutter pt-12">
-      <RuledHeading href="/works" linkLabel="all">works</RuledHeading>
-      <div class="mt-2">
-        {
-          works.slice(0, 4).map((entry, i) => (
-            <EntryRow
-              title={entry.data.title}
-              href={hasDetail(entry) ? `/works/${entry.id}` : entry.data.href}
-              stamp={String(entry.data.date.getFullYear())}
-              meta={entry.data.role}
-              description={entry.data.description}
-              stack={entry.data.stack}
-              external={!hasDetail(entry)}
-              index={i}
-            />
-          ))
-        }
-      </div>
-    </section>
+    <footer class="close">
+      <h2 class="close-title">building something and stuck somewhere?</h2>
 
-    <section class="px-gutter pt-12">
-      <RuledHeading href="/writings" linkLabel="all">writings</RuledHeading>
-      <div class="mt-2">
-        {
-          writings.slice(0, 3).map((post, i) => (
-            <EntryRow
-              title={post.data.title}
-              href={`/writings/${post.id}`}
-              stamp={stamp(post.data.date)}
-              description={post.data.tldr}
-              index={i}
-            />
-          ))
-        }
+      <div class="close-grid">
+        <div>
+          <p class="close-lead">tell me about it. i read everything</p>
+          <a href={`mailto:${SITE.email}`} class="close-mail">{SITE.email}</a>
+          <div class="close-links">
+            {
+              SOCIALS.map(({ label, href }) => (
+                <a href={href} target="_blank" rel="noopener noreferrer">{label}</a>
+              ))
+            }
+          </div>
+        </div>
+        <Quote />
       </div>
-    </section>
 
-    <section class="px-gutter pt-12">
-      <RuledHeading>stack</RuledHeading>
-      <div class="mt-4">
-        <StackList />
+      <div class="close-foot">
+        <span>@{SITE.aka}</span>
+        <span>{SITE.location.toLowerCase()}</span>
+        <span><time data-clock>{initialTime}</time> ist</span>
+        <span>© {new Date().getFullYear()}</span>
       </div>
-    </section>
-
-    <section class="px-gutter pt-12">
-      <Quote />
-    </section>
-  </Shell>
+    </footer>
+  </div>
 </Base>
+
+<script is:inline>
+  (() => {
+    const fmt = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Asia/Kolkata",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    });
+    const tick = () => {
+      const now = fmt.format(new Date());
+      document.querySelectorAll("[data-clock]").forEach((el) => {
+        el.textContent = now;
+      });
+    };
+
+    clearInterval(window.__homeClock);
+    clearTimeout(window.__homeClockAlign);
+    tick();
+    window.__homeClockAlign = setTimeout(() => {
+      tick();
+      window.__homeClock = setInterval(tick, 1000);
+    }, 1000 - (Date.now() % 1000));
+  })();
+</script>

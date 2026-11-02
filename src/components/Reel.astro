@@ -1,0 +1,263 @@
+---
+import { Image } from "astro:assets";
+import type { ImageMetadata } from "astro";
+import Ascii from "ascii.rest/astro";
+
+interface Poster {
+  command: string;
+  score: string;
+  result: string;
+  counter?: string;
+}
+
+interface Frame {
+  id: string;
+  title: string;
+  href: string;
+  external: boolean;
+  line: string;
+  year: number;
+  shot?: ImageMetadata;
+  art?: readonly string[];
+  poster?: Poster;
+}
+
+interface Props {
+  frames: Frame[];
+  total: number;
+}
+
+const { frames, total } = Astro.props;
+---
+
+<section class="reel" data-reel aria-label="selected works">
+  <div class="reel-pin anim-lift [animation-delay:200ms]" data-reel-pin>
+    <ol class="reel-track" data-reel-track>
+      <li class="frame frame--scene">
+        <div class="plate">
+          <Ascii
+            piece="lantern-lake"
+            label="lanterns rising over a lake at night, drawn in text"
+            class="scene"
+          />
+        </div>
+      </li>
+
+      {
+        frames.map((frame) => (
+          <li class:list={["frame", frame.poster && "frame--poster"]}>
+            <a
+              href={frame.href}
+              target={frame.external ? "_blank" : undefined}
+              rel={frame.external ? "noopener noreferrer" : undefined}
+              class="frame-link"
+            >
+              <div
+                class="plate"
+                data-plate={frame.art ? "" : undefined}
+                data-rows={frame.art?.length}
+                style={
+                  frame.art
+                    ? `--cols:${frame.art[0].length};--rows:${frame.art.length}`
+                    : undefined
+                }
+              >
+                {frame.poster && (
+                  <div class="poster">
+                    <p class="poster-cmd">$ {frame.poster.command}</p>
+                    <p class="poster-score">{frame.poster.score}</p>
+                    <div class="poster-foot">
+                      <p class="poster-cmd">{frame.poster.result}</p>
+                      {frame.poster.counter && (
+                        <p class="poster-counter">{frame.poster.counter}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {frame.shot && (
+                  <Image
+                    src={frame.shot}
+                    alt={`the ${frame.title} site`}
+                    widths={[960, 1440, 2200]}
+                    sizes="(min-width: 60rem) 66vw, 100vw"
+                    format="webp"
+                    quality={82}
+                    loading="lazy"
+                    decoding="async"
+                    class="plate-shot"
+                  />
+                )}
+                {frame.art && <pre class="plate-ascii" aria-hidden="true">{frame.art.join("\n")}</pre>}
+              </div>
+
+              <div class="cap">
+                <span class="cap-title">{frame.title}</span>
+                <span class="cap-line">{frame.line}</span>
+                <span class="cap-year">{frame.year}</span>
+              </div>
+            </a>
+          </li>
+        ))
+      }
+
+      <li class="frame frame--more">
+        <a href="/works" class="more-link">
+          <span class="more-word">all {total} works</span>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M5 12h14M13 6l6 6-6 6"></path>
+          </svg>
+        </a>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<script>
+  const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+  const smooth = (from: number, to: number, v: number) => {
+    const t = clamp((v - from) / (to - from), 0, 1);
+    return t * t * (3 - 2 * t);
+  };
+
+  let stop: (() => void) | undefined;
+
+  const start = () => {
+    stop?.();
+    stop = undefined;
+
+    const reel = document.querySelector<HTMLElement>("[data-reel]");
+    const pin = reel?.querySelector<HTMLElement>("[data-reel-pin]");
+    const track = reel?.querySelector<HTMLElement>("[data-reel-track]");
+    if (!reel || !pin || !track) return;
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      reel.dataset.mode = "calm";
+      return;
+    }
+
+    const wide = window.matchMedia("(min-width: 60rem)");
+    const plates = [...reel.querySelectorAll<HTMLElement>("[data-plate]")].map((el) => ({
+      el,
+      rows: Number(el.dataset.rows) || 1,
+      gone: -1,
+    }));
+
+    let dist = 0;
+    let top = 0;
+    let current = 0;
+    let frame = 0;
+
+    const paint = () => {
+      const vw = document.documentElement.clientWidth;
+      const vh = window.innerHeight;
+
+      for (const plate of plates) {
+        const box = plate.el.getBoundingClientRect();
+        const away = wide.matches
+          ? Math.abs(box.left + box.width / 2 - vw / 2) / vw
+          : (box.top + box.height / 2 - vh * 0.42) / vh;
+        const clear = wide.matches ? 1 - smooth(0.16, 0.42, away) : 1 - smooth(0.1, 0.36, away);
+        const gone = Math.round(clear * plate.rows);
+
+        if (gone !== plate.gone) {
+          plate.gone = gone;
+          plate.el.style.setProperty("--gone", String(gone / plate.rows));
+          plate.el.classList.toggle("is-real", gone === plate.rows);
+          if (gone !== plate.rows) plate.el.classList.remove("is-lens");
+        }
+      }
+    };
+
+    const tick = () => {
+      frame = 0;
+      const target = wide.matches ? clamp(window.scrollY - top, 0, dist) : 0;
+      current += (target - current) * 0.16;
+      if (Math.abs(target - current) < 0.4) current = target;
+      track.style.transform = wide.matches ? `translate3d(${-current}px, 0, 0)` : "";
+      paint();
+      if (current !== target) request();
+    };
+
+    const request = () => {
+      if (!frame) frame = requestAnimationFrame(tick);
+    };
+
+    const measure = () => {
+      reel.dataset.mode = wide.matches ? "pin" : "stack";
+      if (wide.matches) {
+        dist = Math.max(0, track.scrollWidth - document.documentElement.clientWidth);
+        reel.style.height = `${pin.offsetHeight + dist}px`;
+        const stuckAt = parseFloat(getComputedStyle(pin).top) || 0;
+        top = reel.getBoundingClientRect().top + window.scrollY - stuckAt;
+      } else {
+        dist = 0;
+        top = 0;
+        reel.style.height = "";
+      }
+      request();
+    };
+
+    const onFocus = (event: FocusEvent) => {
+      if (!wide.matches) return;
+      const item = (event.target as HTMLElement).closest<HTMLElement>(".frame");
+      if (!item) return;
+      const vw = document.documentElement.clientWidth;
+      const left = item.offsetLeft - (vw - item.offsetWidth) / 2;
+      window.scrollTo({ top: top + clamp(left, 0, dist) });
+    };
+
+    const lensMove = (event: PointerEvent) => {
+      if (event.pointerType === "touch") return;
+      const el = event.currentTarget as HTMLElement;
+      if (!el.classList.contains("is-real")) return;
+      const box = el.getBoundingClientRect();
+      el.style.setProperty("--lx", `${event.clientX - box.left}px`);
+      el.style.setProperty("--ly", `${event.clientY - box.top}px`);
+      el.classList.add("is-lens");
+    };
+    const lensOff = (event: PointerEvent) => {
+      (event.currentTarget as HTMLElement).classList.remove("is-lens");
+    };
+
+    const observer = new ResizeObserver(measure);
+    observer.observe(track);
+
+    window.addEventListener("scroll", request, { passive: true });
+    window.addEventListener("resize", measure);
+    wide.addEventListener("change", measure);
+    track.addEventListener("focusin", onFocus);
+    for (const { el } of plates) {
+      el.addEventListener("pointermove", lensMove);
+      el.addEventListener("pointerleave", lensOff);
+    }
+    document.fonts?.ready.then(measure);
+    measure();
+
+    stop = () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.removeEventListener("scroll", request);
+      window.removeEventListener("resize", measure);
+      wide.removeEventListener("change", measure);
+      track.removeEventListener("focusin", onFocus);
+      for (const { el } of plates) {
+        el.removeEventListener("pointermove", lensMove);
+        el.removeEventListener("pointerleave", lensOff);
+      }
+    };
+  };
+
+  document.addEventListener("astro:page-load", start);
+  document.addEventListener("astro:after-swap", () => {
+    stop?.();
+    stop = undefined;
+  });
+</script>

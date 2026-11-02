@@ -86,6 +86,7 @@ const ogImage = new URL(image, Astro.site);
       })();
     </script>
     <ClientRouter />
+    <slot name="head" />
   </head>
 
   <body class="grain">
