@@ -15,27 +15,32 @@ const timeFmt = new Intl.DateTimeFormat("en-GB", {
 const initialTime = timeFmt.format(new Date());
 ---
 
-<div class="flex min-h-dvh flex-col overflow-x-clip">
-  <div class="mx-auto flex w-full max-w-sheet flex-1 flex-col border-x">
-    <header class="sticky top-0 z-20 border-b bg-ground/92 backdrop-blur-md">
-      <div class="relative flex h-12 items-center justify-between gap-3 px-gutter">
+<div class="site-backdrop flex min-h-dvh flex-col overflow-x-clip">
+  <div class="site-sheet mx-auto flex w-full max-w-sheet flex-1 flex-col border-x">
+    <header class="site-header sticky top-0 z-20 border-b backdrop-blur-md">
+      <div class="relative flex min-h-14 items-center justify-between gap-3 px-gutter">
         <a
           href="/"
-          class="shrink-0 text-step--1 font-medium transition-colors duration-200 hover:text-filament"
+          aria-label={`${SITE.name} home`}
+          class="brand-mark shrink-0 transition-colors duration-200 hover:text-filament"
         >
-          {SITE.aka}
+          <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true" fill="none">
+            <path d="M4 25 13.2 6.5h5.6L28 25h-6.2l-1.5-3.3h-8.9L9.8 25H4Z" fill="currentColor" />
+            <path d="m13.3 17.2 2.7-5.8 2.7 5.8h-5.4Z" fill="var(--color-ground)" />
+            <circle cx="25.5" cy="7" r="2" fill="var(--color-filament)" />
+          </svg>
         </a>
 
-        <nav class="flex min-w-0 items-center gap-2.5 sm:gap-5" aria-label="Primary">
+        <nav class="site-nav flex min-w-0 items-center gap-1" aria-label="Primary">
           {
             NAV.map(({ href, label }) => (
               <a
                 href={href}
                 aria-current={isActive(href) ? "page" : undefined}
                 class:list={[
-                  "text-step--1 transition-colors duration-200",
+                  "nav-link text-step--1 transition-colors duration-200",
                   isActive(href)
-                    ? "text-filament"
+                    ? "is-active text-ink"
                     : "text-ink-soft hover:text-ink",
                 ]}
               >

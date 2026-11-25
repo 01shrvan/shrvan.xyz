@@ -8,7 +8,6 @@ import SpecTable from "@/components/SpecTable.astro";
 import StackList from "@/components/StackList.astro";
 import NowPlaying from "@/components/NowPlaying.astro";
 import Quote from "@/components/Quote.astro";
-import Figure from "@/components/Figure.tsx";
 import { SITE, EXPERIENCE } from "@/lib/site";
 
 const works = (await getCollection("works")).sort(
@@ -33,95 +32,48 @@ const hasDetail = (w: { body?: string; data: { verify: unknown[]; numbers: unkno
 
 <Base image="/og/home.jpg">
   <Shell>
-    <section class="px-gutter pt-12">
-      <div class="flex items-start justify-between gap-6">
-        <div class="anim-lift min-w-0">
-          <h1 class="display text-display">
-            shrvan benke{" "}
-            <span class="font-normal text-ink-soft">({SITE.aka})</span>
-          </h1>
-          <p class="mt-1 text-step-0 text-ink-soft">
-            full-stack engineer from mumbai, mostly living on the frontend
-          </p>
-        </div>
-
-        <div class="hidden sm:block">
-          <Figure client:visible discordId={SITE.discordId} />
-        </div>
+    <section class="home-hero px-gutter">
+      <div class="hero-art" aria-hidden="true">
+        <svg viewBox="0 0 760 174" preserveAspectRatio="xMidYMid slice" role="presentation">
+          <defs>
+            <pattern id="hero-dots" width="7" height="7" patternUnits="userSpaceOnUse">
+              <circle cx="1.5" cy="1.5" r="1.25" fill="currentColor" />
+            </pattern>
+            <mask id="hero-wave-mask">
+              <rect width="760" height="174" fill="black" />
+              <path d="M-20 32 C82 28 106 135 212 105 S341 15 431 61 548 150 642 95 728 30 790 45 V0 H-20Z" fill="white" />
+            </mask>
+          </defs>
+          <rect width="760" height="174" fill="url(#hero-dots)" mask="url(#hero-wave-mask)" />
+          <path d="M495 104c44-9 70 13 111 2m-45 12c26 4 38 16 64 12" fill="none" stroke="var(--color-filament)" stroke-width="2" stroke-linecap="round" stroke-dasharray="1 7" />
+          <circle cx="151" cy="111" r="3" fill="var(--color-filament)" />
+          <circle cx="581" cy="60" r="2.5" fill="var(--color-filament)" />
+        </svg>
       </div>
-
-      <div class="anim-lift mt-7 max-w-measure space-y-3.5 [animation-delay:120ms]">
-        <p>
-          currently freelancing; prev. ayritech, dreamskrin. my day to day is
-          next.js and typescript, but im way more obsessive about how a thing
-          feels than how clever the backend is
+      <div class="hero-copy">
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-step--1 text-ink-soft">
+          <span class="font-serif text-step-1 text-ink">Shrvan Benke</span>
+          <span class="data rounded-full border px-2 py-0.5">aka {SITE.aka}</span>
+          <span class="location-mark" aria-hidden="true">✳</span>
+          <span>{SITE.location}</span>
+        </div>
+        <h1 class="display mt-3 text-step-2">I build thoughtful software.</h1>
+        <p class="mt-2 max-w-measure text-step--1 leading-relaxed text-ink-soft">
+          Full-stack engineer, frontend at heart. I turn rough ideas into useful products and care about every detail between the first sketch and the final click.
         </p>
-        <p>
-          i like building products end to end, the schema and the screen both.
-          most of whats below started as something i wanted to exist and
-          couldnt find, so i built it myself
-        </p>
-        <p>
-          reach me at{" "}
-          <a href={`mailto:${SITE.email}`} class="link">{SITE.email}</a>
-        </p>
+        <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-step--1">
+          <a class="link" href={`mailto:${SITE.email}`}>Say hello <span aria-hidden="true">↗</span></a>
+          <span class="availability"><span class="anim-mark" aria-hidden="true"></span> Open to good projects</span>
+        </div>
       </div>
     </section>
 
-    <section class="px-gutter pt-12">
-      <RuledHeading>currently</RuledHeading>
-      <div class="mt-4">
-        <SpecTable
-          rows={[
-            {
-              label: "status",
-              value: "open to freelance, contract and full-time",
-              live: true,
-            },
-            {
-              label: "based",
-              value: "mumbai, india (utc+5:30)",
-              clock: true,
-            },
-            { label: "focus", value: SITE.focus },
-          ]}
-        >
-          <NowPlaying />
-        </SpecTable>
-      </div>
-    </section>
-
-    <section class="px-gutter pt-12">
-      <RuledHeading count={EXPERIENCE.length}>experience</RuledHeading>
+    <section class="home-section px-gutter">
+      <RuledHeading count={works.length}>Selected work</RuledHeading>
+      <p class="section-note">A few things I&apos;ve been making lately.</p>
       <div class="mt-2">
         {
-          EXPERIENCE.map((job, i) => (
-            <div
-              style={`animation-delay:${90 + i * 45}ms`}
-              class="anim-lift py-3"
-            >
-              <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-                <span class="data shrink-0 text-ink-soft sm:w-rail">{job.stamp}</span>
-                <span class="font-medium">{job.role}</span>
-                <span class="leader hidden sm:block" />
-                <span class="data shrink-0 text-ink-soft">
-                  {job.period} &middot; {job.company} &middot; {job.place}
-                </span>
-              </div>
-              <p class="mt-1 text-step--1 leading-relaxed text-ink-soft sm:ml-rail-offset">
-                {job.note}
-              </p>
-            </div>
-          ))
-        }
-      </div>
-    </section>
-
-    <section class="px-gutter pt-12">
-      <RuledHeading href="/works" linkLabel="all">works</RuledHeading>
-      <div class="mt-2">
-        {
-          works.slice(0, 4).map((entry, i) => (
+          works.map((entry, i) => (
             <EntryRow
               title={entry.data.title}
               href={hasDetail(entry) ? `/works/${entry.id}` : entry.data.href}
@@ -137,8 +89,27 @@ const hasDetail = (w: { body?: string; data: { verify: unknown[]; numbers: unkno
       </div>
     </section>
 
-    <section class="px-gutter pt-12">
-      <RuledHeading href="/writings" linkLabel="all">writings</RuledHeading>
+    <section class="home-section px-gutter">
+      <RuledHeading count={EXPERIENCE.length}>Experience</RuledHeading>
+      <div class="mt-2">
+        {
+          EXPERIENCE.map((job, i) => (
+            <div style={`animation-delay:${90 + i * 45}ms`} class="anim-lift py-3">
+              <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                <span class="data shrink-0 text-ink-soft sm:w-rail">{job.stamp}</span>
+                <span class="font-medium">{job.role}</span>
+                <span class="leader hidden sm:block" />
+                <span class="data shrink-0 text-ink-soft">{job.period} · {job.company} · {job.place}</span>
+              </div>
+              <p class="mt-1 text-step--1 leading-relaxed text-ink-soft sm:ml-rail-offset">{job.note}</p>
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <section class="home-section px-gutter">
+      <RuledHeading href="/writings" linkLabel="all">Notes from the process</RuledHeading>
       <div class="mt-2">
         {
           writings.slice(0, 3).map((post, i) => (
@@ -154,15 +125,26 @@ const hasDetail = (w: { body?: string; data: { verify: unknown[]; numbers: unkno
       </div>
     </section>
 
-    <section class="px-gutter pt-12">
-      <RuledHeading>stack</RuledHeading>
+    <section class="home-section px-gutter">
+      <RuledHeading>Currently</RuledHeading>
       <div class="mt-4">
-        <StackList />
+        <SpecTable
+          rows={[
+            { label: "status", value: "open to freelance, contract and full-time", live: true },
+            { label: "based", value: "mumbai, india (utc+5:30)", clock: true },
+            { label: "focus", value: SITE.focus },
+          ]}
+        >
+          <NowPlaying />
+        </SpecTable>
       </div>
     </section>
 
-    <section class="px-gutter pt-12">
-      <Quote />
+    <section class="home-section px-gutter">
+      <RuledHeading>Tools I reach for</RuledHeading>
+      <div class="mt-4"><StackList /></div>
     </section>
+
+    <section class="home-section px-gutter"><Quote /></section>
   </Shell>
 </Base>
